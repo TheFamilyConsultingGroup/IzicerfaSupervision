@@ -76,7 +76,7 @@ def protect_changes():
 
 @app.after_request
 def headers(resp):
-    resp.headers.update({"Cache-Control":"no-store", "Referrer-Policy":"no-referrer",
+    resp.headers.update({"Cache-Control":"no-store", "Referrer-Policy":"same-origin",
                          "X-Content-Type-Options":"nosniff", "X-Frame-Options":"DENY",
                          "Strict-Transport-Security":"max-age=31536000",
                          "Content-Security-Policy":"default-src 'none'; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'",
