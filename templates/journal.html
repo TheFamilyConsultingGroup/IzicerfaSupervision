@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block nav %}<form action="/sortir" method="post"><button class="light">Déconnexion</button></form>{% endblock %}
+{% block main %}
+<div class="heading"><div><h1>Journal des dons</h1><p class="sub">Appels IZICERFA enregistrés · Heures de Paris</p></div>
+<div class="sync {{ 'late' if late }}"><strong>{{ 'Relais à vérifier' if late else 'Relais actif' }}</strong><br>{{ last|paris }}</div></div>
+<form class="filters" action="/journal" method="post">
+<label>Recherche<input type="search" name="q" value="{{ q }}" placeholder="Email, don ou abonnement" maxlength="180"></label>
+<label>Organisme<select name="site"><option value="">Tous</option>{% for s in ["AIU","ENIO"] %}<option {{ 'selected' if site==s }}>{{ s }}</option>{% endfor %}</select></label>
+<label>Statut IZICERFA<select name="status"><option value="">Tous</option>{% for s in statuses %}<option {{ 'selected' if status==s }}>{{ s }}</option>{% endfor %}</select></label>
+<button>Rechercher</button><a href="/journal">Réinitialiser</a></form>
+<h2>{{ total }} appel{{ 's' if total != 1 }}</h2>
+{% if rows %}<div class="scroll"><table><thead><tr><th>Réception</th><th>Organisme / don</th><th>Donateur</th><th>Montant</th><th>Statut du don</th><th>Traitement</th><th>Événement</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r.received|paris }}</td><td><b>{{ r.site }}{% if r.donation %}-{{ r.donation }}{% endif %}</b>
+{% if r.subscription %}<small>Abonnement {{ r.subscription }} · {% if r.initial_donation %}Don initial {{ r.initial_donation }}{% else %}Don initial inconnu{% endif %}</small>{% endif %}</td>
+<td>{{ r.email or '—' }}</td><td class="money">{{ (r.amount or '—')|replace('.',',') }} {{ r.currency or '' }}</td>
+<td><span class="tag {{ 'final' if r.status=='publish' }}">{{ r.status or '—' }}</span></td><td>{{ r.worker or '—' }}{% if r.error %}<small>{{ r.error }}</small>{% endif %}</td>
+<td><details><summary>{{ r.event or 'Détails' }}</summary><dl><dt>Création IZICERFA</dt><dd>{{ r.source_created or 'Non transmise' }}</dd><dt>Date comptable transmise</dt><dd>{{ r.source_accounting or 'Non transmise' }}</dd><dt>Champ « date » transmis</dt><dd>{{ r.source_date or 'Non transmis' }}</dd></dl></details></td></tr>{% endfor %}
+</tbody></table></div>
+<p class="note">« TRAITE » indique que le worker a examiné l’appel. Le statut « publish » rend le don éligible à la synchronisation HubSpot.</p>
+{% else %}<p>Aucun appel pour ces critères.</p>{% endif %}
+{% if page>1 or total>page*50 %}<form method="post" action="/journal" class="pages"><input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="site" value="{{ site }}"><input type="hidden" name="status" value="{{ status }}">{% if page>1 %}<button name="page" value="{{ page-1 }}">Précédent</button>{% endif %} Page {{ page }} {% if total>page*50 %}<button name="page" value="{{ page+1 }}">Suivant</button>{% endif %}</form>{% endif %}
+{% endblock %}

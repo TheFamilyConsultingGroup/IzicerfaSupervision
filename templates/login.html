@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block main %}
+<section class="login"><div class="line"></div><h1>Journal des dons</h1><p class="sub">Alliance israélite universelle · ENIO</p>
+{% if mode=="login" and mail %}<p>Reçois un lien personnel pour consulter les appels IZICERFA.</p><form method="post" action="/demander"><label>Adresse email<input name="email" type="email" autocomplete="email" required></label><button>Recevoir mon lien</button></form>
+{% elif mode=="login" %}<p>Ouvre le lien de connexion reçu par email pour accéder au journal.</p>
+{% elif mode=="confirm" %}<p>Confirme la connexion sur cet appareil.</p><form method="post" action="/ouvrir"><input type="hidden" name="token" id="token"><button id="confirm" disabled>Ouvrir mon journal</button></form><script src="/static/confirm.js"></script>
+{% elif mode=="sent" %}<p>Si l’adresse est autorisée, un lien valable 15 minutes lui sera envoyé. Vérifie aussi tes courriers indésirables.</p>
+{% elif mode=="expired" %}<p>Ce lien a expiré ou a déjà été utilisé.</p><a href="/">Revenir à la connexion</a>
+{% else %}<p>L’envoi du lien est momentanément indisponible. Contacte l’administrateur du journal.</p>{% endif %}</section>
+{% endblock %}
