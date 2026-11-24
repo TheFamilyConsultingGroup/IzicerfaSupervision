@@ -94,7 +94,7 @@ def run(mode):
     if mode == "setup":
         setup()
         return
-    if os.getenv("SETUP_DATABASE_URL"):
+    if os.getenv("SETUP_DATABASE_URL") not in (None, "", "disabled"):
         raise RuntimeError("Le relais doit démarrer sans identifiant d’administration")
     while True:
         try:
