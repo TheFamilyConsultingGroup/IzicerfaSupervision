@@ -11,6 +11,7 @@ def payment_label(declared, gateway, instrument, error):
     manual = {
         "Chèque": {"cheque", "cheques", "check", "checks", "cheque bancaire"},
         "Virement": {"virement", "virement bancaire", "bank transfer", "wire transfer", "bacs", "transfer"},
+        "Don en nature": {"don en nature", "en nature", "in kind"},
         "Espèces": {"especes", "espece", "liquide", "cash"},
         "Prélèvement": {"prelevement", "prelevement sepa", "sepa debit", "direct debit"},
         "PayPal": {"paypal", "paypal commerce"},
@@ -25,7 +26,7 @@ def payment_label(declared, gateway, instrument, error):
         return "À vérifier"
     if matches:
         return matches[0]
-    if values & {"offline", "manual", "manuel"}:
+    if values & {"offline", "manual", "manuel", "manual donation"}:
         return "Manuel (non précisé)"
     if declared and declared not in card | provider:
         return "Autre"
