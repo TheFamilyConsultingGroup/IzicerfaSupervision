@@ -8,6 +8,8 @@ from urllib.request import Request, urlopen
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from payment_methods import payment_label
+
 ROLE = "izicerfa_journal_reader"
 VIEW = "izicerfa_supervision.journal"
 
@@ -65,12 +67,12 @@ def push(path, data=None):
         return json.load(response)
 
 
-def sync():
+def sync(force_full=False):
     state = push("/internal/checkpoint")
     now = datetime.now(UTC)
     floor = max(datetime(2026, 11, 24, 13, 30, tzinfo=UTC), now - timedelta(days=30))
     last = datetime.fromisoformat(state["through"]) if state["through"] else None
-    full = not last or state.get("full_day") != now.date().isoformat()
+    full = force_full or not last or state.get("full_day") != now.date().isoformat()
     since = floor if full else max(floor, last - timedelta(minutes=10))
     count = 0
     with connect() as conn, conn.cursor(name="journal_rows", cursor_factory=RealDictCursor) as cur:
@@ -83,6 +85,11 @@ def sync():
             for row in rows:
                 row.pop("changed")
                 row["received"] = row["received"].astimezone(UTC).isoformat()
+                if "declared_method" in row:
+                    row["payment_method"] = payment_label(
+                        row.pop("declared_method"), row.pop("payment_gateway"),
+                        row.pop("instrument"), row.pop("card_error"),
+                    )
                 batch.append(dict(row))
             push("/internal/import", {"rows": batch})
             count += len(batch)
@@ -91,14 +98,23 @@ def sync():
 
 
 def run(mode):
+    if mode == "migrate-view":
+        dsn = os.environ["SETUP_DATABASE_URL"].replace("postgresql+psycopg://", "postgresql://", 1)
+        with psycopg2.connect(dsn, connect_timeout=8) as conn, conn.cursor() as cur:
+            cur.execute("SET LOCAL lock_timeout = '3s'")
+            cur.execute(Path("view.sql").read_text())
+        print("VUE_MOYEN_PAIEMENT_INSTALLEE", flush=True)
+        return
     if mode == "setup":
         setup()
         return
     if os.getenv("SETUP_DATABASE_URL") not in (None, "", "disabled"):
         raise RuntimeError("Le relais doit démarrer sans identifiant d’administration")
+    first_sync = True
     while True:
         try:
-            sync()
+            sync(force_full=first_sync)
+            first_sync = False
         except Exception as error:
             print("Lecture interrompue", type(error).__name__, getattr(error, "code", "") or "", flush=True)
         time.sleep(120)

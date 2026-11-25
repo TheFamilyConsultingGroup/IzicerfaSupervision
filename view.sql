@@ -13,7 +13,15 @@ SELECT e.id::text AS id, e.recu_le AS received, e.source_izicerfa AS site,
        e.payload #>> '{data,donation,date_comptable}' AS source_accounting,
        e.payload #>> '{data,donation,date}' AS source_date,
        a.donation_id_initial AS initial_donation,
-       greatest(e.recu_le,e.traite_le,a.mis_a_jour_le) AS changed
+       greatest(e.recu_le,e.traite_le,a.mis_a_jour_le) AS changed,
+       e.payload #>> '{data,donation,mode_de_versement}' AS declared_method,
+       e.payload #>> '{data,donation,payment_gateway}' AS payment_gateway,
+       COALESCE(NULLIF(e.payload #>> '{data,donation,payment_method_details,type}',''),
+                NULLIF(e.payload #>> '{data,donation,payment_method,type}',''),
+                CASE WHEN jsonb_typeof((e.payload #> '{data,donation,payment_method}')::jsonb) = 'string'
+                     THEN e.payload #>> '{data,donation,payment_method}' END) AS instrument,
+       CASE WHEN e.payload #>> '{data,donation,stripe_error_code}' = 'card_declined'
+            THEN 'card_declined' END AS card_error
 FROM public.evenements_webhook_recus e
 LEFT JOIN public.etats_abonnements_izicerfa a
     ON a.source_izicerfa = e.source_izicerfa AND a.subscription_id = NULLIF(e.subscription_id,'0')
